@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pandoc CompeteTrack_Architecture_v1.0.docx -o /tmp/competetrack_arch.md)",
+      "Read(//tmp/**)",
+      "Bash(python3 scripts/office/unpack.py CompeteTrack_Architecture_v1.0.docx /tmp/competetrack_unpacked/)",
+      "Bash(python3 -c \":*)",
+      "Bash(python3 -m pip install -r /Users/macbook/Desktop/Competetrack/backend/requirements.txt)",
+      "Bash(python3 -m alembic init alembic)",
+      "Bash(npm install:*)",
+      "Bash(npx next:*)",
+      "Bash(python3 -c \"from app.main import app; print\\(''FastAPI app imported successfully''\\)\")",
+      "Bash(python3 -m alembic revision --autogenerate -m \"phase1_create_all_tables\")",
+      "Bash(python3 -m alembic upgrade head)",
+      "Bash(kill %1)",
+      "Bash(pkill -f \"uvicorn app.main\")",
+      "Bash(pkill -f 'uvicorn app.main')",
+      "Bash(lsof -ti:3000)",
+      "Bash(xargs kill:*)",
+      "Bash(python3 -m pip install httpx)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(curl -s http://localhost:8000/health)",
+      "Bash(python3 -m json.tool)",
+      "Bash(git init:*)",
+      "Bash(git remote:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}
