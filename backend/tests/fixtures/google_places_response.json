@@ -1,0 +1,35 @@
+{
+  "html_attributions": [],
+  "result": {
+    "name": "Phở 24 - Nguyễn Thiện Thuật",
+    "formatted_address": "58 Nguyễn Thiện Thuật, Phường 2, Quận 3, Thành phố Hồ Chí Minh, Vietnam",
+    "formatted_phone_number": "028 3820 4898",
+    "website": "https://pho24.com.vn",
+    "url": "https://maps.google.com/?cid=12345",
+    "rating": 4.1,
+    "user_ratings_total": 892,
+    "price_level": 2,
+    "opening_hours": {
+      "open_now": true,
+      "periods": [
+        {"open": {"day": 1, "time": "0600"}, "close": {"day": 1, "time": "2200"}},
+        {"open": {"day": 2, "time": "0600"}, "close": {"day": 2, "time": "2200"}},
+        {"open": {"day": 3, "time": "0600"}, "close": {"day": 3, "time": "2200"}},
+        {"open": {"day": 4, "time": "0600"}, "close": {"day": 4, "time": "2200"}},
+        {"open": {"day": 5, "time": "0600"}, "close": {"day": 5, "time": "2200"}},
+        {"open": {"day": 6, "time": "0600"}, "close": {"day": 6, "time": "2300"}},
+        {"open": {"day": 0, "time": "0600"}, "close": {"day": 0, "time": "2300"}}
+      ],
+      "weekday_text": [
+        "Monday: 6:00 AM – 10:00 PM",
+        "Tuesday: 6:00 AM – 10:00 PM",
+        "Wednesday: 6:00 AM – 10:00 PM",
+        "Thursday: 6:00 AM – 10:00 PM",
+        "Friday: 6:00 AM – 10:00 PM",
+        "Saturday: 6:00 AM – 11:00 PM",
+        "Sunday: 6:00 AM – 11:00 PM"
+      ]
+    }
+  },
+  "status": "OK"
+}

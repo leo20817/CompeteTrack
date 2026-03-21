@@ -1,5 +1,44 @@
 # CompeteTrack Changelog
 
+## Phase 2 — Google Places 爬蟲 (2026-03-21)
+*Status: In Progress (awaiting API key activation for live test)*
+
+### What was built
+- **Google Places Worker** (`backend/app/workers/google_places.py`):
+  - Async httpx client with context manager
+  - Fetches place details (name, hours, rating, price_level, menu)
+  - Parses opening_hours periods into `{day: {open, close, is_closed}}` format
+  - Handles weekday_text fallback when periods are empty
+  - Graceful handling: no menu → empty list + warning, no hours → empty dict
+  - popular_times → NULL (not available in official API)
+- **Collect endpoint** (`POST /api/brands/{id}/collect`):
+  - Validates brand exists + has google_place_id + API key configured
+  - Creates immutable menu_snapshot with raw_data
+  - Creates menu_items from parsed data
+  - Creates hours_snapshot with hours_data and popular_times
+  - Running collect twice creates 2 separate snapshots (immutability verified)
+- **Menu endpoints**:
+  - `GET /api/menu/{brand_id}` — returns latest snapshot + items
+  - `GET /api/menu/{brand_id}/snapshots` — paginated snapshot list
+- **Test suite** (20 tests, all passing):
+  - `test_google_places_worker.py` — 8 tests (worker unit tests with mocked httpx)
+  - `test_collect.py` — 6 tests (endpoint happy path + error cases)
+  - `test_menu.py` — 6 tests (GET menu + snapshots)
+  - Test infra: conftest.py with transaction rollback, static fixture data
+
+### Verification results
+- [x] All 20 tests pass (`pytest tests/ -v`)
+- [x] Worker correctly parses hours from Google Places periods format
+- [x] Snapshots are immutable (collect twice → 2 rows)
+- [x] Missing data handled gracefully (no crash on empty hours/menu)
+- [ ] Live test with real API key (pending billing activation)
+
+### Issues encountered & fixed
+- SQLite can't handle PostgreSQL ARRAY/JSONB types — switched tests to real Supabase with transaction rollback
+- asyncpg connections bound to event loop — create engine per-test to avoid mismatch
+- `httpx.Response.raise_for_status()` needs `request` param — added helper `_mock_response()`
+- `menu` field was missing from PLACE_DETAILS_FIELDS — added per integrations.md spec
+
 ## Phase 1 — 基礎建設 (2026-03-21)
 *Status: Complete*
 
