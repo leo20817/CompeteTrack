@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from app.api import health, brands, collect, menu
+from app.api import health, brands, collect, menu, changes
 from app.config import settings
 from app.schemas.response import APIResponse
 
@@ -35,6 +35,7 @@ app.include_router(health.router)
 app.include_router(brands.router)
 app.include_router(collect.router)
 app.include_router(menu.router)
+app.include_router(changes.router)
 
 
 @app.exception_handler(Exception)

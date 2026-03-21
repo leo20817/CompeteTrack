@@ -1,5 +1,43 @@
 # CompeteTrack Changelog
 
+## Phase 3 — Change Detector (2026-03-21)
+*Status: Complete*
+
+### What was built
+- **Change Detector** (`backend/app/services/change_detector.py`):
+  - Compares two most recent menu_snapshots for a brand
+  - Detects: price_increase, price_decrease, new_item, removed_item
+  - Severity: high (>10% or new/removed), medium (5-10%), low (<5%)
+  - Idempotent — running twice on same snapshot pair produces no duplicates
+  - Deduplication by (brand_id, old_snapshot_id, new_snapshot_id, field_changed, change_type, item_name)
+- **AI Analyzer** (`backend/app/services/ai_analyzer.py`):
+  - Claude Sonnet API integration for Traditional Chinese summaries
+  - Graceful failure — ai_summary=NULL on error, no crash
+  - Max 100 tokens, 10s timeout per integrations.md spec
+- **Changes API** (`backend/app/api/changes.py`):
+  - `GET /api/changes` — list with brand_id/severity filters + pagination
+  - `GET /api/changes/unnotified` — unnotified changes
+  - `PATCH /api/changes/{id}/read` — mark as notified
+  - `POST /api/changes/detect/{brand_id}` — manual trigger
+- **Test suite** (9 tests, all passing):
+  - Price increase high/medium/low severity detection
+  - New item and removed item detection
+  - Idempotency verification
+  - AI failure graceful handling
+  - No API key → NULL summary without crash
+
+### Verification results
+- [x] 29 total tests pass (9 change detector + 20 existing)
+- [x] Price change >10% → severity=high
+- [x] Price change 5-10% → severity=medium
+- [x] Price change <5% → severity=low
+- [x] New/removed items → severity=high
+- [x] Idempotent — second run returns 0 new changes
+- [x] AI failure → ai_summary=NULL, no crash
+
+### Issues encountered & fixed
+- Python 3.9 doesn't support `str | None` union syntax — use `Optional[str]` instead
+
 ## Phase 2 — Google Places 爬蟲 (2026-03-21)
 *Status: In Progress (awaiting API key activation for live test)*
 

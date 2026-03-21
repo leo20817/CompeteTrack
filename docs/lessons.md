@@ -6,6 +6,10 @@
 - Include user_id in every table from Day 1 for future multi-tenancy.
 - Never use NEXT_PUBLIC_ prefix for API keys — only NEXT_PUBLIC_API_URL is allowed.
 
+## Phase 3 Lessons
+- Python 3.9 does not support `X | None` union syntax — always use `Optional[X]` from typing.
+- Change detector idempotency must check item_name inside JSONB, not just (snapshot_id, change_type) — otherwise two different items with the same change_type would be treated as duplicates.
+
 ## Phase 2 Lessons
 - SQLite cannot be used for tests when models use PostgreSQL-specific types (ARRAY, JSONB) — use real PostgreSQL with transaction rollback instead.
 - asyncpg connections are bound to the event loop that created them — create a new engine per test function to avoid "attached to a different loop" errors.
