@@ -15,9 +15,11 @@ ENV NODE_ENV=production
 
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/public ./public
+# public dir may be empty but must exist
+RUN mkdir -p /app/public
+COPY --from=builder /app/public* ./public/
 
-EXPOSE 3000
-ENV PORT=3000
+EXPOSE 8080
+ENV PORT=8080
 
 CMD ["node", "server.js"]
