@@ -12,7 +12,7 @@ import httpx
 logger = logging.getLogger(__name__)
 
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-OPENROUTER_MODEL = "anthropic/claude-sonnet-4-20250514"
+OPENROUTER_MODEL = "anthropic/claude-sonnet-4"
 
 SYSTEM_PROMPT = """你是一個越南餐廳菜單分析專家。從菜單照片中提取所有品項，回傳 JSON 格式。
 
