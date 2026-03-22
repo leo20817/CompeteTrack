@@ -103,17 +103,39 @@ export default function BrandDetailPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <Link href="/brands" className="text-gray-400 hover:text-gray-600">← 返回</Link>
-        <h2 className="text-2xl font-bold">{brand.name}</h2>
-        <span className={`px-2 py-0.5 rounded text-xs ${
-          brand.brand_type === "own" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-700"
-        }`}>
-          {brand.brand_type === "own" ? "自有" : "競品"}
-        </span>
-        {brand.google_place_id && (
-          <span className="text-xs text-gray-400">Place ID: {brand.google_place_id}</span>
-        )}
+      <div className="mb-6">
+        <div className="flex items-center gap-3 mb-2">
+          <Link href="/brands" className="text-gray-400 hover:text-gray-600">← 返回</Link>
+          <h2 className="text-2xl font-bold">{brand.name}</h2>
+          <span className={`px-2 py-0.5 rounded text-xs ${
+            brand.brand_type === "own" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-700"
+          }`}>
+            {brand.brand_type === "own" ? "自有" : "競品"}
+          </span>
+        </div>
+        <div className="flex items-center gap-4 text-xs text-gray-400">
+          {brand.google_place_id && (
+            <span>📍 Place ID: {brand.google_place_id}</span>
+          )}
+          {brand.tiktok_username && (
+            <a href={`https://tiktok.com/@${brand.tiktok_username}`} target="_blank" rel="noopener noreferrer" className="hover:text-gray-600">
+              🎵 @{brand.tiktok_username}
+            </a>
+          )}
+          {brand.instagram_username && (
+            <a href={`https://instagram.com/${brand.instagram_username}`} target="_blank" rel="noopener noreferrer" className="hover:text-gray-600">
+              📷 @{brand.instagram_username}
+            </a>
+          )}
+          {brand.facebook_url && (
+            <a href={brand.facebook_url} target="_blank" rel="noopener noreferrer" className="hover:text-gray-600">
+              👤 Facebook
+            </a>
+          )}
+          {!brand.tiktok_username && !brand.instagram_username && !brand.facebook_url && (
+            <span className="text-amber-500">⚠ 尚未設定社群帳號</span>
+          )}
+        </div>
       </div>
 
       {/* Sidebar + Content layout */}

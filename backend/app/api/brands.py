@@ -70,6 +70,9 @@ async def create_brand(
         google_place_id=brand_in.google_place_id,
         website_url=brand_in.website_url,
         foody_url=brand_in.foody_url,
+        tiktok_username=brand_in.tiktok_username,
+        instagram_username=brand_in.instagram_username,
+        facebook_url=brand_in.facebook_url,
         notes=brand_in.notes,
     )
     db.add(brand)
