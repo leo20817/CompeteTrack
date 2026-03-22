@@ -71,8 +71,8 @@ async def upload_menu_photos(
     if not brand:
         raise HTTPException(status_code=404, detail="Brand not found")
 
-    if not settings.claude_api_key:
-        raise HTTPException(status_code=500, detail="CLAUDE_API_KEY not configured")
+    if not settings.openrouter_api_key:
+        raise HTTPException(status_code=500, detail="OPENROUTER_API_KEY not configured")
 
     if len(files) > 10:
         raise HTTPException(status_code=400, detail="Maximum 10 photos per upload")
@@ -104,7 +104,7 @@ async def upload_menu_photos(
         })
 
     # Parse with Claude Vision
-    parsed = await parse_menu_from_base64(images_b64, settings.claude_api_key)
+    parsed = await parse_menu_from_base64(images_b64, settings.openrouter_api_key)
 
     return APIResponse(
         success=True,

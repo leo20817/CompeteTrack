@@ -1,20 +1,18 @@
-"""Menu Vision Parser — uses Claude Vision to extract menu items from photos.
+"""Menu Vision Parser — uses OpenRouter (Claude) to extract menu items from photos.
 
 Sends up to 10 images in a single API call, returns structured menu data.
 """
 
-import base64
 import json
 import logging
 import re
-from typing import Optional
 
 import httpx
 
 logger = logging.getLogger(__name__)
 
-CLAUDE_API_URL = "https://api.anthropic.com/v1/messages"
-CLAUDE_MODEL = "claude-sonnet-4-5-20241022"
+OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
+OPENROUTER_MODEL = "anthropic/claude-sonnet-4-20250514"
 
 SYSTEM_PROMPT = """你是一個越南餐廳菜單分析專家。從菜單照片中提取所有品項，回傳 JSON 格式。
 
@@ -37,29 +35,27 @@ SYSTEM_PROMPT = """你是一個越南餐廳菜單分析專家。從菜單照片�
 }"""
 
 
-async def parse_menu_photos(
-    photo_urls: list[str],
-    api_key: str,
-) -> dict:
-    """Parse menu items from photo URLs using Claude Vision.
+def _build_openrouter_content(image_items: list[dict], source_type: str) -> list[dict]:
+    """Build OpenRouter-compatible content array with images.
 
     Args:
-        photo_urls: List of public image URLs (max 10)
-        api_key: Anthropic API key
-
-    Returns:
-        {"items": [...], "restaurant_name": str|None, "notes": str|None}
+        image_items: List of image data (URLs or base64)
+        source_type: "url" or "base64"
     """
-    if not photo_urls:
-        return {"items": [], "restaurant_name": None, "notes": "No photos provided"}
-
-    # Build content with images
     content = []
-    for i, url in enumerate(photo_urls[:10]):
-        content.append({
-            "type": "image",
-            "source": {"type": "url", "url": url},
-        })
+    for i, img in enumerate(image_items[:10]):
+        if source_type == "url":
+            content.append({
+                "type": "image_url",
+                "image_url": {"url": img},
+            })
+        else:
+            content.append({
+                "type": "image_url",
+                "image_url": {
+                    "url": f"data:{img['media_type']};base64,{img['data']}",
+                },
+            })
         content.append({
             "type": "text",
             "text": f"（第 {i+1} 張菜單照片）",
@@ -69,40 +65,67 @@ async def parse_menu_photos(
         "type": "text",
         "text": "請分析以上所有菜單照片，提取所有品項和價格，回傳 JSON。",
     })
+    return content
+
+
+def _parse_response(data: dict) -> dict:
+    """Extract JSON from OpenRouter response."""
+    text = data["choices"][0]["message"]["content"].strip()
+    text = re.sub(r'^```json\s*', '', text)
+    text = re.sub(r'\s*```$', '', text)
+    return json.loads(text)
+
+
+async def _call_openrouter(content: list[dict], api_key: str) -> dict:
+    """Make the OpenRouter API call."""
+    async with httpx.AsyncClient(timeout=90.0) as client:
+        resp = await client.post(
+            OPENROUTER_API_URL,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": OPENROUTER_MODEL,
+                "max_tokens": 4096,
+                "messages": [
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": content},
+                ],
+            },
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+
+async def parse_menu_photos(
+    photo_urls: list[str],
+    api_key: str,
+) -> dict:
+    """Parse menu items from photo URLs using OpenRouter (Claude Vision).
+
+    Args:
+        photo_urls: List of public image URLs (max 10)
+        api_key: OpenRouter API key
+
+    Returns:
+        {"items": [...], "restaurant_name": str|None, "notes": str|None}
+    """
+    if not photo_urls:
+        return {"items": [], "restaurant_name": None, "notes": "No photos provided"}
+
+    content = _build_openrouter_content(photo_urls, "url")
 
     try:
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            resp = await client.post(
-                CLAUDE_API_URL,
-                headers={
-                    "x-api-key": api_key,
-                    "anthropic-version": "2023-06-01",
-                    "content-type": "application/json",
-                },
-                json={
-                    "model": CLAUDE_MODEL,
-                    "max_tokens": 4096,
-                    "system": SYSTEM_PROMPT,
-                    "messages": [{"role": "user", "content": content}],
-                },
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            text = data["content"][0]["text"].strip()
-
-            # Parse JSON from response (handle markdown code blocks)
-            text = re.sub(r'^```json\s*', '', text)
-            text = re.sub(r'\s*```$', '', text)
-
-            result = json.loads(text)
-            logger.info("Parsed %d menu items from %d photos", len(result.get("items", [])), len(photo_urls))
-            return result
-
+        data = await _call_openrouter(content, api_key)
+        result = _parse_response(data)
+        logger.info("Parsed %d menu items from %d photos", len(result.get("items", [])), len(photo_urls))
+        return result
     except json.JSONDecodeError as e:
-        logger.exception("Failed to parse Claude Vision response as JSON")
+        logger.exception("Failed to parse Vision response as JSON")
         return {"items": [], "restaurant_name": None, "notes": f"JSON parse error: {str(e)}"}
     except Exception as e:
-        logger.exception("Claude Vision API call failed")
+        logger.exception("OpenRouter Vision API call failed")
         return {"items": [], "restaurant_name": None, "notes": f"API error: {str(e)}"}
 
 
@@ -114,61 +137,21 @@ async def parse_menu_from_base64(
 
     Args:
         images_b64: [{"data": base64_str, "media_type": "image/jpeg"}, ...]
-        api_key: Anthropic API key
+        api_key: OpenRouter API key
     """
     if not images_b64:
         return {"items": [], "restaurant_name": None, "notes": "No images provided"}
 
-    content = []
-    for i, img in enumerate(images_b64[:10]):
-        content.append({
-            "type": "image",
-            "source": {
-                "type": "base64",
-                "media_type": img["media_type"],
-                "data": img["data"],
-            },
-        })
-        content.append({
-            "type": "text",
-            "text": f"（第 {i+1} 張菜單照片）",
-        })
-
-    content.append({
-        "type": "text",
-        "text": "請分析以上所有菜單照片，提取所有品項和價格，回傳 JSON。",
-    })
+    content = _build_openrouter_content(images_b64, "base64")
 
     try:
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            resp = await client.post(
-                CLAUDE_API_URL,
-                headers={
-                    "x-api-key": api_key,
-                    "anthropic-version": "2023-06-01",
-                    "content-type": "application/json",
-                },
-                json={
-                    "model": CLAUDE_MODEL,
-                    "max_tokens": 4096,
-                    "system": SYSTEM_PROMPT,
-                    "messages": [{"role": "user", "content": content}],
-                },
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            text = data["content"][0]["text"].strip()
-
-            text = re.sub(r'^```json\s*', '', text)
-            text = re.sub(r'\s*```$', '', text)
-
-            result = json.loads(text)
-            logger.info("Parsed %d menu items from %d base64 images", len(result.get("items", [])), len(images_b64))
-            return result
-
+        data = await _call_openrouter(content, api_key)
+        result = _parse_response(data)
+        logger.info("Parsed %d menu items from %d base64 images", len(result.get("items", [])), len(images_b64))
+        return result
     except json.JSONDecodeError:
-        logger.exception("Failed to parse Claude Vision response as JSON")
+        logger.exception("Failed to parse Vision response as JSON")
         return {"items": [], "restaurant_name": None, "notes": "JSON parse error"}
     except Exception as e:
-        logger.exception("Claude Vision API call failed")
+        logger.exception("OpenRouter Vision API call failed")
         return {"items": [], "restaurant_name": None, "notes": f"API error: {str(e)}"}

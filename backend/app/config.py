@@ -16,7 +16,8 @@ class Settings(BaseSettings):
 
     # External APIs (not used in Phase 1, but defined for config completeness)
     google_places_api_key: Optional[str] = None
-    claude_api_key: Optional[str] = None
+    claude_api_key: Optional[str] = None  # deprecated, use openrouter
+    openrouter_api_key: Optional[str] = None
     resend_api_key: Optional[str] = None
     resend_from_email: Optional[str] = None
     apify_api_token: Optional[str] = None
