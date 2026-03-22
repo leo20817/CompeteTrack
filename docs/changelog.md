@@ -1,5 +1,34 @@
 # CompeteTrack Changelog
 
+## Menu Photo Upload + AI Analysis (2026-03-22)
+*Status: Complete (awaiting CLAUDE_API_KEY + Supabase Storage setup for live test)*
+
+### What was built
+- **Claude Vision Menu Parser** (`backend/app/services/menu_vision.py`):
+  - Sends up to 10 images to Claude Sonnet Vision in single API call
+  - Extracts item_name, category, price (VND), description
+  - Handles both URL-based and base64 image input
+  - System prompt optimized for Vietnamese restaurant menus
+- **Upload API** (`backend/app/api/menu_upload.py`):
+  - `POST /api/menu-upload/{brand_id}/upload` — upload photos + AI parse (returns preview)
+  - `POST /api/menu-upload/{brand_id}/confirm` — save reviewed items to DB
+  - Supabase Storage integration for photo persistence
+  - Creates menu_snapshot with source='manual_photo'
+- **Frontend Components**:
+  - `MenuUploader.tsx` — drag & drop upload with preview thumbnails
+  - `MenuReviewTable.tsx` — editable table for AI results review
+  - Inline in brand detail 菜單 tab
+  - User can edit/add/remove items before confirming
+- **Proxy Routes**: upload (multipart forward) + confirm (JSON proxy)
+
+### Flow
+1. User uploads 1-10 menu photos (JPG/PNG/WebP)
+2. Photos stored to Supabase Storage
+3. Claude Vision analyzes all photos, returns structured JSON
+4. User reviews/edits in frontend table
+5. User clicks "確認並儲存" → menu_snapshot + menu_items created
+6. Change Detector can compare with previous snapshot
+
 ## Phase 6 — 社群媒體監控 (2026-03-22)
 *Status: Complete (awaiting Apify API token for live test)*
 

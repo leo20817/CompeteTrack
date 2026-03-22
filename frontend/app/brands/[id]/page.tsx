@@ -10,6 +10,8 @@ import MenuDiffView from "@/components/MenuDiffView";
 import PopularTimesHeatmap from "@/components/PopularTimesHeatmap";
 import SocialMetricsCard from "@/components/SocialMetricsCard";
 import TopPostsGrid from "@/components/TopPostsGrid";
+import MenuUploader from "@/components/MenuUploader";
+import MenuReviewTable from "@/components/MenuReviewTable";
 
 const sidebarItems = [
   { key: "menu", icon: "📋", label: "菜單" },
@@ -38,6 +40,7 @@ export default function BrandDetailPage() {
   const [changes, setChanges] = useState<any[]>([]);
   const [severityFilter, setSeverityFilter] = useState("");
   const [socialData, setSocialData] = useState<any>(null);
+  const [parsedMenu, setParsedMenu] = useState<any>(null);
 
   useEffect(() => { loadBrand(); }, [id]);
 
@@ -167,6 +170,24 @@ export default function BrandDetailPage() {
                   <p className="text-gray-400">尚無菜單資料。</p>
                 </div>
               )}
+
+              {/* Menu photo upload */}
+              <div className="mt-6">
+                {parsedMenu ? (
+                  <MenuReviewTable
+                    brandId={id}
+                    items={parsedMenu.parsed?.items || []}
+                    photoUrls={parsedMenu.photo_urls || []}
+                    notes={parsedMenu.parsed?.notes || null}
+                    onConfirmed={() => { setParsedMenu(null); loadMenu(); }}
+                  />
+                ) : (
+                  <MenuUploader
+                    brandId={id}
+                    onParsed={(result) => setParsedMenu(result)}
+                  />
+                )}
+              </div>
 
               {snapshots.length >= 2 && (
                 <div className="mt-6">
