@@ -1,3 +1,4 @@
+from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -100,5 +101,101 @@ async def list_menu_snapshots(
             "total": total,
             "limit": limit,
             "offset": offset,
+        },
+    )
+
+
+@router.get("/{brand_id}/diff")
+async def get_menu_diff(
+    brand_id: UUID,
+    old_snapshot_id: Optional[UUID] = Query(default=None),
+    new_snapshot_id: Optional[UUID] = Query(default=None),
+    db: AsyncSession = Depends(get_db),
+):
+    """Compare two snapshots and return diff (added/removed/price_changed items)."""
+    brand_result = await db.execute(select(Brand).where(Brand.id == brand_id))
+    if not brand_result.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="Brand not found")
+
+    # If no snapshot IDs provided, use the two most recent
+    if not old_snapshot_id or not new_snapshot_id:
+        snap_query = (
+            select(MenuSnapshot)
+            .where(MenuSnapshot.brand_id == brand_id)
+            .order_by(MenuSnapshot.snapshot_date.desc(), MenuSnapshot.created_at.desc())
+            .limit(2)
+        )
+        snap_result = await db.execute(snap_query)
+        snaps = snap_result.scalars().all()
+        if len(snaps) < 2:
+            return APIResponse(
+                success=True,
+                data={"diff": [], "message": "Need at least 2 snapshots to compare"},
+            )
+        new_snapshot_id = snaps[0].id
+        old_snapshot_id = snaps[1].id
+
+    # Get items for both snapshots
+    old_items_result = await db.execute(
+        select(MenuItem).where(MenuItem.snapshot_id == old_snapshot_id)
+    )
+    new_items_result = await db.execute(
+        select(MenuItem).where(MenuItem.snapshot_id == new_snapshot_id)
+    )
+
+    old_items = {i.item_name: i for i in old_items_result.scalars().all()}
+    new_items = {i.item_name: i for i in new_items_result.scalars().all()}
+
+    diff = []
+
+    # Items in both
+    for name in set(old_items.keys()) & set(new_items.keys()):
+        old_i = old_items[name]
+        new_i = new_items[name]
+        status = "unchanged"
+        if old_i.price and new_i.price and old_i.price != new_i.price:
+            status = "price_changed"
+        diff.append({
+            "item_name": name,
+            "category": new_i.category,
+            "status": status,
+            "old_price": float(old_i.price) if old_i.price else None,
+            "new_price": float(new_i.price) if new_i.price else None,
+            "currency": new_i.currency,
+        })
+
+    # New items
+    for name in set(new_items.keys()) - set(old_items.keys()):
+        i = new_items[name]
+        diff.append({
+            "item_name": name,
+            "category": i.category,
+            "status": "added",
+            "old_price": None,
+            "new_price": float(i.price) if i.price else None,
+            "currency": i.currency,
+        })
+
+    # Removed items
+    for name in set(old_items.keys()) - set(new_items.keys()):
+        i = old_items[name]
+        diff.append({
+            "item_name": name,
+            "category": i.category,
+            "status": "removed",
+            "old_price": float(i.price) if i.price else None,
+            "new_price": None,
+            "currency": i.currency,
+        })
+
+    diff.sort(key=lambda x: ({"removed": 0, "added": 1, "price_changed": 2, "unchanged": 3}[x["status"]], x["item_name"]))
+
+    return APIResponse(
+        success=True,
+        data={
+            "old_snapshot_id": str(old_snapshot_id),
+            "new_snapshot_id": str(new_snapshot_id),
+            "diff": diff,
+            "total": len(diff),
         },
     )

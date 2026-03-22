@@ -53,3 +53,16 @@ async def run_daily_digest(db: AsyncSession = Depends(get_db)):
     await db.commit()
 
     return APIResponse(success=True, data=result)
+
+
+@router.post("/run-now")
+async def run_now():
+    """Manually trigger full collect + detect for all brands."""
+    from app.scheduler import daily_collect_and_detect
+
+    try:
+        await daily_collect_and_detect()
+        return APIResponse(success=True, data={"message": "收集完成"})
+    except Exception as e:
+        logger.exception("Manual run-now failed")
+        return APIResponse(success=False, error=str(e))

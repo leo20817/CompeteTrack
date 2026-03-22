@@ -1,4 +1,5 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// All API calls go through Next.js API routes (server-side proxy).
+// NEVER call FastAPI directly from client components.
 
 interface APIResponse<T = unknown> {
   success: boolean;
@@ -11,7 +12,7 @@ async function fetchAPI<T>(
   path: string,
   options?: RequestInit
 ): Promise<APIResponse<T>> {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(path, {
     headers: {
       "Content-Type": "application/json",
       ...options?.headers,
@@ -19,31 +20,53 @@ async function fetchAPI<T>(
     ...options,
   });
 
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(error.error || `API error: ${res.status}`);
-  }
+  const json = await res.json().catch(() => ({
+    success: false,
+    data: null,
+    error: `HTTP ${res.status}`,
+    timestamp: new Date().toISOString(),
+  }));
 
-  return res.json();
+  return json;
 }
 
 export const api = {
+  dashboard: {
+    summary: () => fetchAPI("/api/dashboard/summary"),
+    timeline: (days = 30) => fetchAPI(`/api/dashboard/timeline?days=${days}`),
+  },
   brands: {
     list: (limit = 50, offset = 0) =>
       fetchAPI(`/api/brands?limit=${limit}&offset=${offset}`),
     get: (id: string) => fetchAPI(`/api/brands/${id}`),
     create: (data: Record<string, unknown>) =>
-      fetchAPI("/api/brands", {
-        method: "POST",
-        body: JSON.stringify(data),
-      }),
+      fetchAPI("/api/brands", { method: "POST", body: JSON.stringify(data) }),
     update: (id: string, data: Record<string, unknown>) =>
-      fetchAPI(`/api/brands/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-      }),
+      fetchAPI(`/api/brands/${id}`, { method: "PUT", body: JSON.stringify(data) }),
     delete: (id: string) =>
       fetchAPI(`/api/brands/${id}`, { method: "DELETE" }),
+    collect: (id: string) =>
+      fetchAPI(`/api/brands/${id}/collect`, { method: "POST" }),
   },
-  health: () => fetchAPI("/health"),
+  menu: {
+    latest: (brandId: string) => fetchAPI(`/api/menu/${brandId}`),
+    snapshots: (brandId: string) => fetchAPI(`/api/menu/${brandId}/snapshots`),
+    diff: (brandId: string, oldId?: string, newId?: string) => {
+      let url = `/api/menu/${brandId}/diff`;
+      if (oldId && newId) url += `?old_snapshot_id=${oldId}&new_snapshot_id=${newId}`;
+      return fetchAPI(url);
+    },
+  },
+  changes: {
+    list: (params?: { brand_id?: string; severity?: string; limit?: number }) => {
+      const q = new URLSearchParams();
+      if (params?.brand_id) q.set("brand_id", params.brand_id);
+      if (params?.severity) q.set("severity", params.severity);
+      if (params?.limit) q.set("limit", String(params.limit));
+      return fetchAPI(`/api/changes?${q.toString()}`);
+    },
+  },
+  scheduler: {
+    runNow: () => fetchAPI("/api/scheduler/run-now", { method: "POST" }),
+  },
 };
