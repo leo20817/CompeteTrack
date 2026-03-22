@@ -8,11 +8,14 @@ import { formatVND, formatDate, formatDateTime } from "@/lib/formatters";
 import SeverityBadge from "@/components/SeverityBadge";
 import MenuDiffView from "@/components/MenuDiffView";
 import PopularTimesHeatmap from "@/components/PopularTimesHeatmap";
+import SocialMetricsCard from "@/components/SocialMetricsCard";
+import TopPostsGrid from "@/components/TopPostsGrid";
 
 const sidebarItems = [
   { key: "menu", icon: "📋", label: "菜單" },
   { key: "price", icon: "📈", label: "價格歷史" },
   { key: "hours", icon: "🕐", label: "營業時段" },
+  { key: "social", icon: "📱", label: "社群媒體" },
   { key: "changes", icon: "🔔", label: "變化記錄" },
 ];
 
@@ -34,11 +37,13 @@ export default function BrandDetailPage() {
   const [diff, setDiff] = useState<any>(null);
   const [changes, setChanges] = useState<any[]>([]);
   const [severityFilter, setSeverityFilter] = useState("");
+  const [socialData, setSocialData] = useState<any>(null);
 
   useEffect(() => { loadBrand(); }, [id]);
 
   useEffect(() => {
     if (activeSection === "menu") loadMenu();
+    if (activeSection === "social") loadSocial();
     if (activeSection === "changes") loadChanges();
   }, [activeSection, id]);
 
@@ -65,6 +70,12 @@ export default function BrandDetailPage() {
   async function loadDiff(oldId?: string, newId?: string) {
     const res = await api.menu.diff(id, oldId, newId);
     if (res.success) setDiff(res.data);
+  }
+
+  async function loadSocial() {
+    const res = await fetch(`/api/social/${id}`);
+    const json = await res.json();
+    if (json.success) setSocialData(json.data);
   }
 
   async function loadChanges() {
@@ -213,6 +224,64 @@ export default function BrandDetailPage() {
               <div className="bg-white rounded-lg shadow p-6">
                 <h4 className="font-medium mb-3">熱門時段</h4>
                 <PopularTimesHeatmap data={null} />
+              </div>
+            </div>
+          )}
+
+          {/* 社群媒體 */}
+          {activeSection === "social" && (
+            <div>
+              <h3 className="text-lg font-semibold mb-4">社群媒體</h3>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <SocialMetricsCard
+                  platform="tiktok"
+                  platformLabel="TikTok"
+                  platformColor="text-black"
+                  username={socialData?.tiktok_username}
+                  data={socialData?.tiktok}
+                  metrics={[
+                    { label: "總愛心", value: socialData?.tiktok?.metrics?.total_likes },
+                    { label: "影片數", value: socialData?.tiktok?.metrics?.video_count },
+                    { label: "平均觀看", value: socialData?.tiktok?.metrics?.avg_views },
+                    { label: "互動率", value: socialData?.tiktok?.metrics?.engagement_rate ? `${socialData.tiktok.metrics.engagement_rate}%` : null },
+                  ]}
+                >
+                  {socialData?.tiktok?.top_posts && (
+                    <TopPostsGrid posts={socialData.tiktok.top_posts} platform="tiktok" />
+                  )}
+                </SocialMetricsCard>
+
+                <SocialMetricsCard
+                  platform="instagram"
+                  platformLabel="Instagram"
+                  platformColor="text-pink-600"
+                  username={socialData?.instagram_username}
+                  data={socialData?.instagram}
+                  metrics={[
+                    { label: "平均讚數", value: socialData?.instagram?.metrics?.avg_likes },
+                    { label: "平均留言", value: socialData?.instagram?.metrics?.avg_comments },
+                    { label: "互動率", value: socialData?.instagram?.metrics?.engagement_rate ? `${socialData.instagram.metrics.engagement_rate}%` : null },
+                    { label: "Reels 數", value: socialData?.instagram?.metrics?.reels_count },
+                  ]}
+                >
+                  {socialData?.instagram?.top_posts && (
+                    <TopPostsGrid posts={socialData.instagram.top_posts} platform="instagram" />
+                  )}
+                </SocialMetricsCard>
+
+                <SocialMetricsCard
+                  platform="facebook"
+                  platformLabel="Facebook"
+                  platformColor="text-blue-600"
+                  username={socialData?.facebook_url}
+                  data={socialData?.facebook}
+                  metrics={[
+                    { label: "粉絲專頁讚", value: socialData?.facebook?.metrics?.page_likes },
+                    { label: "評分", value: socialData?.facebook?.metrics?.rating },
+                    { label: "評論數", value: socialData?.facebook?.metrics?.review_count },
+                    { label: "打卡數", value: socialData?.facebook?.metrics?.checkins },
+                  ]}
+                />
               </div>
             </div>
           )}

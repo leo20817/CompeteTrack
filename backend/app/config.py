@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     claude_api_key: Optional[str] = None
     resend_api_key: Optional[str] = None
     resend_from_email: Optional[str] = None
+    apify_api_token: Optional[str] = None
     frontend_url: str = "http://localhost:3000"
 
     # Supabase (reserved for future auth)

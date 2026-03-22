@@ -1,5 +1,28 @@
 # CompeteTrack Changelog
 
+## Phase 6 — 社群媒體監控 (2026-03-22)
+*Status: Complete (awaiting Apify API token for live test)*
+
+### What was built
+- **Apify Workers** (3 platform collectors):
+  - `apify_tiktok.py`: TikTok profile + videos via `clockworks/free-tiktok-scraper`
+  - `apify_instagram.py`: Instagram profile + posts via `apify/instagram-profile-scraper`
+  - `apify_facebook.py`: Facebook page info via `apify/facebook-pages-scraper`
+  - All async (httpx), 120s timeout, graceful failure handling
+- **Database**: Alembic migration adds `tiktok_username`, `instagram_username`, `facebook_url` to brands
+- **Social API** (`GET /api/social/{brand_id}`): returns latest snapshot for all 3 platforms
+- **Social Change Detector**: detects follower changes (>5% = high), viral content (>100K views), engagement rate changes
+- **Scheduler**: social collection at 09:00 VN time daily
+- **Collect endpoint**: now also triggers social collection when Apify configured
+- **Frontend**: 社群媒體 sidebar tab with 3 platform cards + top posts grid
+  - Empty states: "尚未設定帳號" / "尚未收集資料"
+- **Tests** (6 new, all passing): TikTok/Instagram/Facebook happy path + empty responses
+
+### Metrics JSONB structure
+- TikTok: total_likes, video_count, avg_views, avg_likes, avg_comments, avg_shares, engagement_rate
+- Instagram: avg_likes, avg_comments, engagement_rate, reels_count, avg_reel_views
+- Facebook: page_likes, rating, review_count, checkins, talking_about
+
 ## Phase 4 — Email 通知系統 (2026-03-22)
 *Status: Complete*
 

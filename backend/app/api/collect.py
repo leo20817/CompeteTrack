@@ -89,6 +89,12 @@ async def collect_brand_data(brand_id: UUID, db: AsyncSession = Depends(get_db))
         )
         db.add(hours_snapshot)
 
+    # 6. Collect social media data (if Apify configured)
+    social_result = {}
+    if settings.apify_api_token:
+        from app.api.social import collect_social_for_brand
+        social_result = await collect_social_for_brand(db, brand, settings.apify_api_token)
+
     await db.commit()
 
     return APIResponse(
@@ -104,5 +110,6 @@ async def collect_brand_data(brand_id: UUID, db: AsyncSession = Depends(get_db))
             "has_popular_times": data["popular_times"] is not None,
             "rating": data["rating"],
             "user_ratings_total": data["user_ratings_total"],
+            "social": social_result,
         },
     )

@@ -1,16 +1,19 @@
-# Current Phase: Phase 5 — Frontend Dashboard
+# Current Phase: Phase 7 — 進階功能與優化
 
 ## Goal
-Build the frontend dashboard UI showing brands, changes, and menu comparisons.
+Polish UI, add multi-brand comparison views, and optimize for production.
 
 ## Tasks
-- [ ] 5.1 Dashboard page — overview stats (brands count, recent changes)
-- [ ] 5.2 Brands list page — CRUD UI
-- [ ] 5.3 Brand detail page — latest menu, change history
-- [ ] 5.4 Changes timeline — filterable list of all changes
+- [ ] 7.1 Multi-brand price comparison chart
+- [ ] 7.2 Hours comparison view
+- [ ] 7.3 Social media trends comparison
+- [ ] 7.4 Export reports (PDF/CSV)
+- [ ] 7.5 Production optimizations (caching, rate limiting)
 
 ## Previous Phases
 - Phase 1: 基礎建設 — completed 2026-03-21
 - Phase 2: Google Places 爬蟲 — completed 2026-03-21
 - Phase 3: Change Detector — completed 2026-03-21
 - Phase 4: Email 通知系統 — completed 2026-03-22
+- Phase 5: Frontend Dashboard — completed 2026-03-22
+- Phase 6: 社群媒體監控 — completed 2026-03-22

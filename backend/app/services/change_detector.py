@@ -11,7 +11,7 @@ from uuid import UUID
 from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.brand import MenuSnapshot, MenuItem, BrandChange
+from app.models.brand import MenuSnapshot, MenuItem, BrandChange, SocialSnapshot
 from app.services.ai_analyzer import generate_change_summary
 
 logger = logging.getLogger(__name__)
@@ -249,3 +249,119 @@ async def _change_exists(
             return True
 
     return False
+
+
+async def detect_social_changes(
+    db: AsyncSession,
+    brand_id: UUID,
+    platform: str,
+) -> list[BrandChange]:
+    """Compare two most recent social snapshots for a platform and detect changes.
+
+    Severity thresholds:
+      high:   followers increase >5% single day, OR single video views >100,000
+      medium: followers change 1-5%, OR engagement_rate change >20%
+      low:    any other metric change
+    """
+    query = (
+        select(SocialSnapshot)
+        .where(and_(
+            SocialSnapshot.brand_id == brand_id,
+            SocialSnapshot.platform == platform,
+        ))
+        .order_by(SocialSnapshot.snapshot_date.desc(), SocialSnapshot.created_at.desc())
+        .limit(2)
+    )
+    result = await db.execute(query)
+    snaps = result.scalars().all()
+
+    if len(snaps) < 2:
+        return []
+
+    new_snap = snaps[0]
+    old_snap = snaps[1]
+
+    changes = []
+
+    # Check follower change
+    if old_snap.followers and new_snap.followers and old_snap.followers > 0:
+        diff = new_snap.followers - old_snap.followers
+        pct = abs(diff / old_snap.followers * 100)
+
+        if diff != 0:
+            if pct > 5:
+                severity = "high"
+            elif pct >= 1:
+                severity = "medium"
+            else:
+                severity = "low"
+
+            change_type = "follower_increase" if diff > 0 else "follower_decrease"
+            changes.append(BrandChange(
+                brand_id=brand_id,
+                change_type=change_type,
+                severity=severity,
+                field_changed=f"{platform}_followers",
+                old_value={"followers": old_snap.followers, "platform": platform},
+                new_value={"followers": new_snap.followers, "platform": platform, "change_pct": round(pct, 1)},
+            ))
+
+    # Check for viral videos (TikTok/Instagram top_posts)
+    if new_snap.top_posts and platform in ("tiktok", "instagram"):
+        view_key = "views" if platform == "tiktok" else "likes"
+        for post in new_snap.top_posts:
+            views = post.get(view_key, 0)
+            if views > 100000:
+                changes.append(BrandChange(
+                    brand_id=brand_id,
+                    change_type="viral_content",
+                    severity="high",
+                    field_changed=f"{platform}_viral",
+                    old_value=None,
+                    new_value={
+                        "platform": platform,
+                        view_key: views,
+                        "description": post.get("description", "")[:100],
+                        "url": post.get("url", ""),
+                    },
+                ))
+
+    # Check engagement rate change
+    old_metrics = old_snap.metrics or {}
+    new_metrics = new_snap.metrics or {}
+    old_er = old_metrics.get("engagement_rate", 0)
+    new_er = new_metrics.get("engagement_rate", 0)
+
+    if old_er and new_er and old_er > 0:
+        er_change_pct = abs((new_er - old_er) / old_er * 100)
+        if er_change_pct > 20:
+            changes.append(BrandChange(
+                brand_id=brand_id,
+                change_type="engagement_change",
+                severity="medium",
+                field_changed=f"{platform}_engagement",
+                old_value={"engagement_rate": old_er, "platform": platform},
+                new_value={"engagement_rate": new_er, "platform": platform, "change_pct": round(er_change_pct, 1)},
+            ))
+
+    # Persist (skip duplicates)
+    new_changes = []
+    for change in changes:
+        # Simple dedup: check if same change_type + field_changed exists for today
+        exists_result = await db.execute(
+            select(BrandChange.id).where(and_(
+                BrandChange.brand_id == brand_id,
+                BrandChange.change_type == change.change_type,
+                BrandChange.field_changed == change.field_changed,
+                BrandChange.detected_at >= new_snap.created_at,
+            )).limit(1)
+        )
+        if not exists_result.scalar_one_or_none():
+            db.add(change)
+            new_changes.append(change)
+
+    if new_changes:
+        await db.flush()
+        logger.info("Detected %d social changes for brand %s (%s)", len(new_changes), brand_id, platform)
+
+    return new_changes

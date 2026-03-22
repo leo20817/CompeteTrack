@@ -29,6 +29,9 @@ class Brand(FullTimestampMixin, Base):
     google_place_id = Column(Text)
     website_url = Column(Text)
     foody_url = Column(Text)
+    tiktok_username = Column(Text)
+    instagram_username = Column(Text)
+    facebook_url = Column(Text)
     notes = Column(Text)
     is_active = Column(Boolean, nullable=False, default=True)
 

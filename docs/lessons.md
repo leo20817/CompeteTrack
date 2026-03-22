@@ -6,6 +6,12 @@
 - Include user_id in every table from Day 1 for future multi-tenancy.
 - Never use NEXT_PUBLIC_ prefix for API keys — only NEXT_PUBLIC_API_URL is allowed.
 
+## Phase 6 Lessons
+- Apify REST API is simpler than their Python SDK — just POST to `run-sync-get-dataset-items` with httpx.
+- TikTok Apify response structure varies between actors — always handle multiple field name variants (e.g. `fans` vs `followerCount`).
+- Social change detection needs separate dedup logic from menu changes — use `detected_at >= snapshot.created_at` instead of snapshot pair IDs.
+- `use(params)` doesn't work in Next.js 14 — always use `useParams()` from `next/navigation` in client components.
+
 ## Phase 4 Lessons
 - SendGrid HTTP API is simpler than the Python SDK for async use — just use httpx POST to `https://api.sendgrid.com/v3/mail/send`.
 - `_send_email()` uses positional args — test assertions must use `call_args[0][index]`, not keyword access.

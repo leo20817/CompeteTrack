@@ -133,6 +133,37 @@ async def daily_digest():
     logger.info("Daily digest result: %s", result)
 
 
+async def daily_social_collect():
+    """Collect social media data for all active brands."""
+    logger.info("Starting daily social collect job")
+
+    if not settings.apify_api_token:
+        logger.error("APIFY_API_TOKEN not configured — skipping social collect")
+        return
+
+    async with async_session() as db:
+        result = await db.execute(
+            select(Brand).where(Brand.is_active.is_(True))
+        )
+        brands = result.scalars().all()
+
+        for brand in brands:
+            has_social = brand.tiktok_username or brand.instagram_username or brand.facebook_url
+            if not has_social:
+                continue
+
+            try:
+                from app.api.social import collect_social_for_brand
+                await collect_social_for_brand(db, brand, settings.apify_api_token)
+                await db.commit()
+                logger.info("Social collected for %s", brand.name)
+            except Exception:
+                logger.exception("Social collect failed for %s", brand.name)
+                await db.rollback()
+
+    logger.info("Daily social collect complete")
+
+
 def start_scheduler():
     """Register and start APScheduler jobs."""
     tz = settings.timezone
@@ -149,6 +180,13 @@ def start_scheduler():
     )
 
     scheduler.add_job(
+        daily_social_collect,
+        CronTrigger(hour=9, minute=0, timezone=tz),
+        id="daily_social",
+        replace_existing=True,
+    )
+
+    scheduler.add_job(
         daily_digest,
         CronTrigger(
             hour=settings.digest_email_hour,
@@ -161,7 +199,7 @@ def start_scheduler():
 
     scheduler.start()
     logger.info(
-        "Scheduler started — collect at %02d:%02d, digest at %02d:%02d (%s)",
+        "Scheduler started — collect at %02d:%02d, social at 09:00, digest at %02d:%02d (%s)",
         settings.collect_hour, settings.collect_minute,
         settings.digest_email_hour, settings.digest_email_minute,
         tz,
