@@ -20,7 +20,6 @@ PLACE_DETAILS_FIELDS = [
     "formatted_phone_number",
     "website",
     "url",
-    "menu",
 ]
 
 
