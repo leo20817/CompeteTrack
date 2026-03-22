@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     claude_api_key: Optional[str] = None
     sendgrid_api_key: Optional[str] = None
     sendgrid_from_email: Optional[str] = None
+    frontend_url: str = "http://localhost:3000"
 
     # Supabase (reserved for future auth)
     supabase_url: Optional[str] = None

@@ -106,7 +106,12 @@ async def trigger_detect_changes(brand_id: UUID, db: AsyncSession = Depends(get_
         raise HTTPException(status_code=404, detail="Brand not found")
 
     new_changes = await detect_changes(
-        db, brand_id, claude_api_key=settings.claude_api_key,
+        db, brand_id,
+        claude_api_key=settings.claude_api_key,
+        sendgrid_api_key=settings.sendgrid_api_key,
+        sendgrid_from_email=settings.sendgrid_from_email,
+        owner_email=settings.owner_user_email,
+        frontend_url=settings.frontend_url,
     )
     await db.commit()
 

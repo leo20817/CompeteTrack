@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from app.api import health, brands, collect, menu, changes
+from app.api import health, brands, collect, menu, changes, scheduler_api
 from app.config import settings
 from app.schemas.response import APIResponse
 
@@ -10,8 +10,12 @@ from app.schemas.response import APIResponse
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
+    from app.scheduler import start_scheduler
+    start_scheduler()
     yield
     # Shutdown
+    from app.scheduler import scheduler
+    scheduler.shutdown(wait=False)
 
 
 app = FastAPI(
@@ -36,6 +40,7 @@ app.include_router(brands.router)
 app.include_router(collect.router)
 app.include_router(menu.router)
 app.include_router(changes.router)
+app.include_router(scheduler_api.router)
 
 
 @app.exception_handler(Exception)

@@ -6,6 +6,12 @@
 - Include user_id in every table from Day 1 for future multi-tenancy.
 - Never use NEXT_PUBLIC_ prefix for API keys — only NEXT_PUBLIC_API_URL is allowed.
 
+## Phase 4 Lessons
+- SendGrid HTTP API is simpler than the Python SDK for async use — just use httpx POST to `https://api.sendgrid.com/v3/mail/send`.
+- `_send_email()` uses positional args — test assertions must use `call_args[0][index]`, not keyword access.
+- APScheduler `CronTrigger(timezone=...)` accepts timezone name strings like `"Asia/Ho_Chi_Minh"` directly.
+- Email notification failures must NEVER bubble up — always wrap in try/except and record `status='failed'`.
+
 ## Phase 3 Lessons
 - Python 3.9 does not support `X | None` union syntax — always use `Optional[X]` from typing.
 - Change detector idempotency must check item_name inside JSONB, not just (snapshot_id, change_type) — otherwise two different items with the same change_type would be treated as duplicates.

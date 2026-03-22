@@ -1,5 +1,41 @@
 # CompeteTrack Changelog
 
+## Phase 4 — Email 通知系統 (2026-03-22)
+*Status: Complete*
+
+### What was built
+- **Email Notifier** (`backend/app/services/email_notifier.py`):
+  - SendGrid HTTP API integration (async httpx)
+  - Immediate alert for high severity changes
+  - Daily digest grouped by brand (high + medium)
+  - "No changes" digest sends "今日無競品異動，市場穩定。"
+  - HTML email templates with severity badges and CTA buttons
+  - All sends wrapped in try/except — failure → status='failed', no crash
+- **Scheduler** (`backend/app/scheduler.py`):
+  - APScheduler with Asia/Ho_Chi_Minh timezone
+  - 08:00 daily: collect all brands + detect changes
+  - 08:30 daily: send digest email
+  - Started/stopped via FastAPI lifespan
+- **Scheduler API** (`backend/app/api/scheduler_api.py`):
+  - `GET /api/scheduler/status` — scheduler status + next run times
+  - `POST /api/scheduler/run-daily-digest` — manual trigger
+- **Change Detector Integration**:
+  - Immediate alert triggered after detecting high severity changes
+  - Passes SendGrid config from settings
+- **Test suite** (8 new tests, 37 total, all passing):
+  - Immediate alert: sends, skips non-high, skips already-notified
+  - SendGrid failure creates notification with status='failed'
+  - Daily digest: with changes, no changes, failure handling
+  - Notification record creation verified
+
+### Verification results
+- [x] 37 total tests pass
+- [x] Immediate alert only for severity='high'
+- [x] SendGrid failure → status='failed', error_msg set, no crash
+- [x] Daily digest includes brand grouping and severity badges
+- [x] Duplicate prevention: skips changes with notified_at already set
+- [ ] Live email test (pending SendGrid API key setup)
+
 ## Phase 3 — Change Detector (2026-03-21)
 *Status: Complete*
 

@@ -21,6 +21,10 @@ async def detect_changes(
     db: AsyncSession,
     brand_id: UUID,
     claude_api_key: Optional[str] = None,
+    sendgrid_api_key: Optional[str] = None,
+    sendgrid_from_email: Optional[str] = None,
+    owner_email: Optional[str] = None,
+    frontend_url: Optional[str] = None,
 ) -> list[BrandChange]:
     """Compare the two most recent snapshots for a brand and record any changes.
 
@@ -136,6 +140,18 @@ async def detect_changes(
     for change in new_changes:
         db.add(change)
     await db.flush()
+
+    # 9. Send immediate alert for high severity changes
+    if sendgrid_api_key and sendgrid_from_email and owner_email:
+        from app.services.email_notifier import send_immediate_alert
+        await send_immediate_alert(
+            db=db,
+            changes=new_changes,
+            sendgrid_api_key=sendgrid_api_key,
+            from_email=sendgrid_from_email,
+            owner_email=owner_email,
+            frontend_url=frontend_url or "",
+        )
 
     logger.info("Detected %d new changes for brand %s", len(new_changes), brand_id)
     return new_changes
