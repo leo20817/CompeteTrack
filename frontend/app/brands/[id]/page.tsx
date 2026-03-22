@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { formatVND, formatDate, formatDateTime } from "@/lib/formatters";
@@ -17,8 +18,8 @@ const changeTypeLabels: Record<string, string> = {
   removed_item: "商品下架",
 };
 
-export default function BrandDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function BrandDetailPage() {
+  const { id } = useParams<{ id: string }>();
   const [brand, setBrand] = useState<any>(null);
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
