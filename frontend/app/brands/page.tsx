@@ -97,6 +97,8 @@ export default function BrandsPage() {
             <tr>
               <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">名稱</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">類型</th>
+              <th className="text-center px-4 py-3 text-sm font-medium text-gray-600">評分</th>
+              <th className="text-center px-4 py-3 text-sm font-medium text-gray-600">評論數</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">狀態</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">更新時間</th>
               <th className="text-right px-4 py-3 text-sm font-medium text-gray-600">操作</th>
@@ -116,6 +118,20 @@ export default function BrandsPage() {
                   }`}>
                     {b.brand_type === "own" ? "自有" : "競品"}
                   </span>
+                </td>
+                <td className="px-4 py-3 text-center">
+                  {b.rating ? (
+                    <span className="font-medium text-amber-600">⭐ {b.rating}</span>
+                  ) : (
+                    <span className="text-gray-300 text-sm">—</span>
+                  )}
+                </td>
+                <td className="px-4 py-3 text-center">
+                  {b.user_ratings_total ? (
+                    <span className="text-sm text-gray-600">{b.user_ratings_total.toLocaleString()}</span>
+                  ) : (
+                    <span className="text-gray-300 text-sm">—</span>
+                  )}
                 </td>
                 <td className="px-4 py-3">
                   {b.is_active ? (
@@ -152,7 +168,7 @@ export default function BrandsPage() {
             ))}
             {brands.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
+                <td colSpan={7} className="px-4 py-8 text-center text-gray-400">
                   尚無品牌。點擊「新增品牌」開始追蹤。
                 </td>
               </tr>

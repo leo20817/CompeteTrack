@@ -57,6 +57,9 @@ export const api = {
       return fetchAPI(url);
     },
   },
+  hours: {
+    latest: (brandId: string) => fetchAPI(`/api/hours/${brandId}`),
+  },
   changes: {
     list: (params?: { brand_id?: string; severity?: string; limit?: number }) => {
       const q = new URLSearchParams();

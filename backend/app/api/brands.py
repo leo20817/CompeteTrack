@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
-from app.models.brand import Brand, User
+from app.models.brand import Brand, User, MenuSnapshot
 from app.schemas.brand import BrandCreate, BrandUpdate, BrandOut
 from app.schemas.response import APIResponse
 
@@ -45,10 +45,31 @@ async def list_brands(
     )
     total = (await db.execute(count_query)).scalar()
 
+    # Enrich each brand with latest rating and review_count from snapshots
+    enriched_items = []
+    for b in brands:
+        item = BrandOut.model_validate(b).model_dump(mode="json")
+        # Get latest snapshot's raw_data for rating/review
+        snap_result = await db.execute(
+            select(MenuSnapshot.raw_data)
+            .where(MenuSnapshot.brand_id == b.id)
+            .order_by(MenuSnapshot.created_at.desc())
+            .limit(1)
+        )
+        raw_data = snap_result.scalar_one_or_none()
+        if raw_data and isinstance(raw_data, dict):
+            item["rating"] = raw_data.get("rating")
+            item["user_ratings_total"] = raw_data.get("user_ratings_total")
+            item["last_collected"] = None
+        else:
+            item["rating"] = None
+            item["user_ratings_total"] = None
+        enriched_items.append(item)
+
     return APIResponse(
         success=True,
         data={
-            "items": [BrandOut.model_validate(b).model_dump(mode="json") for b in brands],
+            "items": enriched_items,
             "total": total,
             "limit": limit,
             "offset": offset,

@@ -41,11 +41,13 @@ export default function BrandDetailPage() {
   const [severityFilter, setSeverityFilter] = useState("");
   const [socialData, setSocialData] = useState<any>(null);
   const [parsedMenu, setParsedMenu] = useState<any>(null);
+  const [hoursData, setHoursData] = useState<any>(null);
 
   useEffect(() => { loadBrand(); }, [id]);
 
   useEffect(() => {
     if (activeSection === "menu") loadMenu();
+    if (activeSection === "hours") loadHours();
     if (activeSection === "social") loadSocial();
     if (activeSection === "changes") loadChanges();
   }, [activeSection, id]);
@@ -73,6 +75,11 @@ export default function BrandDetailPage() {
   async function loadDiff(oldId?: string, newId?: string) {
     const res = await api.menu.diff(id, oldId, newId);
     if (res.success) setDiff(res.data);
+  }
+
+  async function loadHours() {
+    const res = await api.hours.latest(id);
+    if (res.success) setHoursData(res.data);
   }
 
   async function loadSocial() {
@@ -258,15 +265,81 @@ export default function BrandDetailPage() {
               <h3 className="text-lg font-semibold mb-4">營業時段</h3>
               <div className="bg-white rounded-lg shadow p-6 mb-6">
                 <h4 className="font-medium mb-3">每週營業時間</h4>
-                {menu?.snapshot ? (
-                  <p className="text-gray-400">營業時段資料請從 Google Places 收集。</p>
+                {hoursData?.hours ? (
+                  <div className="overflow-hidden rounded-lg border">
+                    <table className="w-full">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="text-left px-4 py-2 text-sm font-medium text-gray-600">星期</th>
+                          <th className="text-left px-4 py-2 text-sm font-medium text-gray-600">營業時間</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {(() => {
+                          const dayNames: Record<string, string> = {
+                            Monday: "星期一", Tuesday: "星期二", Wednesday: "星期三",
+                            Thursday: "星期四", Friday: "星期五", Saturday: "星期六", Sunday: "星期日",
+                          };
+                          const hours = hoursData.hours;
+
+                          // Handle different formats from Google Places
+                          if (Array.isArray(hours)) {
+                            return hours.map((h: any, i: number) => (
+                              <tr key={i} className="hover:bg-gray-50">
+                                <td className="px-4 py-2 font-medium text-sm">{dayNames[h.day] || h.day || `第${i+1}天`}</td>
+                                <td className="px-4 py-2 text-sm text-gray-600">
+                                  {h.open && h.close ? `${h.open} – ${h.close}` : h.text || "未知"}
+                                </td>
+                              </tr>
+                            ));
+                          }
+
+                          // weekday_text format
+                          if (hours.weekday_text && Array.isArray(hours.weekday_text)) {
+                            return hours.weekday_text.map((text: string, i: number) => (
+                              <tr key={i} className="hover:bg-gray-50">
+                                <td className="px-4 py-2 font-medium text-sm">{text.split(":")[0] || `Day ${i+1}`}</td>
+                                <td className="px-4 py-2 text-sm text-gray-600">{text.includes(":") ? text.substring(text.indexOf(":") + 1).trim() : text}</td>
+                              </tr>
+                            ));
+                          }
+
+                          // periods format
+                          if (hours.periods && Array.isArray(hours.periods)) {
+                            const dayOrder = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+                            return hours.periods.map((p: any, i: number) => (
+                              <tr key={i} className="hover:bg-gray-50">
+                                <td className="px-4 py-2 font-medium text-sm">{dayNames[dayOrder[p.open?.day]] || `Day ${p.open?.day}`}</td>
+                                <td className="px-4 py-2 text-sm text-gray-600">
+                                  {p.open?.time ? `${p.open.time.slice(0,2)}:${p.open.time.slice(2)} – ${p.close?.time ? `${p.close.time.slice(0,2)}:${p.close.time.slice(2)}` : "?"}` : "24 小時"}
+                                </td>
+                              </tr>
+                            ));
+                          }
+
+                          return (
+                            <tr>
+                              <td colSpan={2} className="px-4 py-3 text-gray-400 text-sm">
+                                營業時段格式無法解析。原始資料：{JSON.stringify(hours).substring(0, 200)}
+                              </td>
+                            </tr>
+                          );
+                        })()}
+                      </tbody>
+                    </table>
+                  </div>
                 ) : (
-                  <p className="text-gray-400">尚無營業時段資料。</p>
+                  <p className="text-gray-400">尚無營業時段資料。請先點擊「收集」取得資料。</p>
+                )}
+                {hoursData?.snapshot && (
+                  <p className="text-xs text-gray-400 mt-2">
+                    最後更新：{formatDateTime(hoursData.snapshot.created_at)} · 來源：Google Places
+                  </p>
                 )}
               </div>
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-white rounded-lg shadow p-6 mt-4">
                 <h4 className="font-medium mb-3">熱門時段</h4>
-                <PopularTimesHeatmap data={null} />
+                <PopularTimesHeatmap data={hoursData?.popular_times || null} />
               </div>
             </div>
           )}
