@@ -11,8 +11,15 @@ export default function BrandsPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editBrand, setEditBrand] = useState<any>(null);
+  const [collectingId, setCollectingId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   useEffect(() => { loadBrands(); }, []);
+
+  function showToast(message: string, type: "success" | "error" = "success") {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  }
 
   async function loadBrands() {
     setLoading(true);
@@ -42,12 +49,25 @@ export default function BrandsPage() {
   }
 
   async function handleCollect(id: string) {
-    const res = await api.brands.collect(id);
-    if (res.success) {
-      alert("資料收集完成！");
-      loadBrands();
-    } else {
-      alert(`收集失敗：${res.error || "未知錯誤"}`);
+    setCollectingId(id);
+    try {
+      const res = await api.brands.collect(id);
+      if (res.success) {
+        const data = res.data as any;
+        const details = [
+          data.rating ? `評分 ${data.rating}` : null,
+          data.menu_items_count ? `${data.menu_items_count} 道菜` : null,
+          data.has_hours_data ? "營業時段已更新" : null,
+        ].filter(Boolean).join("、");
+        showToast(`✅ 收集完成！${details || "資料已記錄"}`);
+        loadBrands();
+      } else {
+        showToast(`收集失敗：${res.error || "未知錯誤"}`, "error");
+      }
+    } catch {
+      showToast("收集失敗：網路錯誤", "error");
+    } finally {
+      setCollectingId(null);
     }
   }
 
@@ -110,9 +130,10 @@ export default function BrandsPage() {
                 <td className="px-4 py-3 text-right space-x-2">
                   <button
                     onClick={() => handleCollect(b.id)}
-                    className="text-sm text-green-600 hover:underline"
+                    disabled={collectingId === b.id}
+                    className="text-sm text-green-600 hover:underline disabled:opacity-50 disabled:cursor-wait"
                   >
-                    收集
+                    {collectingId === b.id ? "收集中..." : "收集"}
                   </button>
                   <button
                     onClick={() => { setEditBrand(b); setShowModal(true); }}
@@ -147,6 +168,15 @@ export default function BrandsPage() {
         initialData={editBrand || undefined}
         title={editBrand ? "編輯品牌" : "新增品牌"}
       />
+
+      {/* Toast notification */}
+      {toast && (
+        <div className={`fixed bottom-6 right-6 px-5 py-3 rounded-lg shadow-lg text-white text-sm z-50 transition-all ${
+          toast.type === "success" ? "bg-green-600" : "bg-red-600"
+        }`}>
+          {toast.message}
+        </div>
+      )}
     </div>
   );
 }
