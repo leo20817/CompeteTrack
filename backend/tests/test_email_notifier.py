@@ -1,4 +1,4 @@
-"""Tests for email_notifier — SendGrid calls mocked."""
+"""Tests for email_notifier — Resend calls mocked."""
 
 from datetime import date, datetime, timezone, timedelta
 from unittest.mock import AsyncMock, patch, MagicMock
@@ -69,7 +69,7 @@ async def test_immediate_alert_sends_email(mock_send, db_session, high_change):
     await send_immediate_alert(
         db=db_session,
         changes=[change],
-        sendgrid_api_key="fake-key",
+        resend_api_key="fake-key",
         from_email="test@example.com",
         owner_email=user.email,
         frontend_url="https://competetrack.zeabur.app",
@@ -106,7 +106,7 @@ async def test_immediate_alert_skips_non_high(mock_send, db_session, user_and_br
 
     await send_immediate_alert(
         db=db_session, changes=[change],
-        sendgrid_api_key="fake", from_email="t@t.com",
+        resend_api_key="fake", from_email="t@t.com",
         owner_email=user.email, frontend_url="http://localhost",
     )
 
@@ -122,7 +122,7 @@ async def test_immediate_alert_skips_already_notified(mock_send, db_session, hig
 
     await send_immediate_alert(
         db=db_session, changes=[change],
-        sendgrid_api_key="fake", from_email="t@t.com",
+        resend_api_key="fake", from_email="t@t.com",
         owner_email=user.email, frontend_url="http://localhost",
     )
 
@@ -130,15 +130,15 @@ async def test_immediate_alert_skips_already_notified(mock_send, db_session, hig
 
 
 @pytest.mark.asyncio
-@patch("app.services.email_notifier._send_email", new_callable=AsyncMock, side_effect=RuntimeError("SendGrid down"))
+@patch("app.services.email_notifier._send_email", new_callable=AsyncMock, side_effect=RuntimeError("Resend down"))
 async def test_immediate_alert_failure_creates_failed_notification(mock_send, db_session, high_change):
-    """SendGrid failure → notification with status='failed', no crash."""
+    """Resend failure → notification with status='failed', no crash."""
     user, brand, change = high_change
 
     # Should not raise
     await send_immediate_alert(
         db=db_session, changes=[change],
-        sendgrid_api_key="fake", from_email="t@t.com",
+        resend_api_key="fake", from_email="t@t.com",
         owner_email=user.email, frontend_url="http://localhost",
     )
 
@@ -150,7 +150,7 @@ async def test_immediate_alert_failure_creates_failed_notification(mock_send, db
     notif = result.scalar_one_or_none()
     assert notif is not None
     assert notif.status == "failed"
-    assert "SendGrid down" in notif.error_msg
+    assert "Resend down" in notif.error_msg
 
 
 @pytest.mark.asyncio
@@ -161,7 +161,7 @@ async def test_daily_digest_with_changes(mock_send, db_session, high_change):
 
     result = await send_daily_digest(
         db=db_session,
-        sendgrid_api_key="fake-key",
+        resend_api_key="fake-key",
         from_email="test@example.com",
         owner_email=user.email,
         frontend_url="https://competetrack.zeabur.app",
@@ -181,7 +181,7 @@ async def test_daily_digest_no_changes(mock_send, db_session, user_and_brand):
 
     result = await send_daily_digest(
         db=db_session,
-        sendgrid_api_key="fake-key",
+        resend_api_key="fake-key",
         from_email="test@example.com",
         owner_email=user.email,
         frontend_url="https://competetrack.zeabur.app",
@@ -204,7 +204,7 @@ async def test_daily_digest_failure(mock_send, db_session, high_change):
 
     result = await send_daily_digest(
         db=db_session,
-        sendgrid_api_key="fake-key",
+        resend_api_key="fake-key",
         from_email="test@example.com",
         owner_email=user.email,
         frontend_url="https://competetrack.zeabur.app",
@@ -223,7 +223,7 @@ async def test_notification_record_created(mock_send, db_session, high_change):
 
     await send_daily_digest(
         db=db_session,
-        sendgrid_api_key="fake-key",
+        resend_api_key="fake-key",
         from_email="test@example.com",
         owner_email=user.email,
         frontend_url="https://competetrack.zeabur.app",

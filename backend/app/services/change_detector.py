@@ -21,8 +21,8 @@ async def detect_changes(
     db: AsyncSession,
     brand_id: UUID,
     claude_api_key: Optional[str] = None,
-    sendgrid_api_key: Optional[str] = None,
-    sendgrid_from_email: Optional[str] = None,
+    resend_api_key: Optional[str] = None,
+    resend_from_email: Optional[str] = None,
     owner_email: Optional[str] = None,
     frontend_url: Optional[str] = None,
 ) -> list[BrandChange]:
@@ -142,13 +142,13 @@ async def detect_changes(
     await db.flush()
 
     # 9. Send immediate alert for high severity changes
-    if sendgrid_api_key and sendgrid_from_email and owner_email:
+    if resend_api_key and resend_from_email and owner_email:
         from app.services.email_notifier import send_immediate_alert
         await send_immediate_alert(
             db=db,
             changes=new_changes,
-            sendgrid_api_key=sendgrid_api_key,
-            from_email=sendgrid_from_email,
+            resend_api_key=resend_api_key,
+            from_email=resend_from_email,
             owner_email=owner_email,
             frontend_url=frontend_url or "",
         )

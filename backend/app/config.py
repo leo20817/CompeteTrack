@@ -17,8 +17,8 @@ class Settings(BaseSettings):
     # External APIs (not used in Phase 1, but defined for config completeness)
     google_places_api_key: Optional[str] = None
     claude_api_key: Optional[str] = None
-    sendgrid_api_key: Optional[str] = None
-    sendgrid_from_email: Optional[str] = None
+    resend_api_key: Optional[str] = None
+    resend_from_email: Optional[str] = None
     frontend_url: str = "http://localhost:3000"
 
     # Supabase (reserved for future auth)

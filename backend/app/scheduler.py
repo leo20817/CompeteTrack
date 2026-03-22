@@ -116,15 +116,15 @@ async def daily_digest():
     """Send daily digest email with unnotified changes."""
     logger.info("Starting daily digest job")
 
-    if not settings.sendgrid_api_key or not settings.sendgrid_from_email:
-        logger.error("SendGrid not configured — skipping digest")
+    if not settings.resend_api_key or not settings.resend_from_email:
+        logger.error("Resend not configured — skipping digest")
         return
 
     async with async_session() as db:
         result = await send_daily_digest(
             db=db,
-            sendgrid_api_key=settings.sendgrid_api_key,
-            from_email=settings.sendgrid_from_email,
+            resend_api_key=settings.resend_api_key,
+            from_email=settings.resend_from_email,
             owner_email=settings.owner_user_email,
             frontend_url=settings.frontend_url,
         )

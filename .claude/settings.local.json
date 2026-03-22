@@ -23,7 +23,25 @@
       "Bash(python3 -m json.tool)",
       "Bash(git init:*)",
       "Bash(git remote:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(curl -s \"https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=Pho+24+Ho+Chi+Minh&inputtype=textquery&fields=place_id,name,formatted_address&key=AIzaSyCpxBMcuDVZG-IaYIMxTMa_sK3T1MaJsBM\")",
+      "Bash(pip install:*)",
+      "Bash(pip3 install:*)",
+      "Bash(python3 -m pytest tests/ -v)",
+      "Bash(python3 -m pytest tests/ -v --timeout=30)",
+      "Bash(curl -s \"https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=Pho+24+Ho+Chi+Minh&inputtype=textquery&fields=place_id,name,formatted_address&key=AIzaSyBUTwGAxWURwvKZ2CpCpfZcEP8GHepORZk\")",
+      "Bash(curl -s \"https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=Pho+24+Ho+Chi+Minh&inputtype=textquery&fields=place_id,name&key=AIzaSyBUTwGAxWURwvKZ2CpCpfZcEP8GHepORZk\")",
+      "Bash(python3 -m pytest tests/test_change_detector.py -v)",
+      "Bash(curl -s https://competetrack.zeabur.app/health)",
+      "Bash(curl -sv https://competetrack.zeabur.app/health)",
+      "Bash(curl -s https://api-competetrack.zeabur.app/health)",
+      "Bash(curl -sv https://api-competetrack.zeabur.app/health)",
+      "Bash(curl -sk https://api-competetrack.zeabur.app/health)",
+      "Bash(curl -s https://competetrack.zeabur.app)",
+      "Bash(curl -sv https://competetrack.zeabur.app)",
+      "Bash(python3 -m pytest tests/test_email_notifier.py -v)"
     ]
   }
 }

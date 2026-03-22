@@ -1,6 +1,6 @@
-"""Email Notifier — sends immediate alerts and daily digests via SendGrid.
+"""Email Notifier — sends immediate alerts and daily digests via Resend.
 
-All SendGrid calls are wrapped in try/except. Failures log the error and
+All Resend calls are wrapped in try/except. Failures log the error and
 set notifications.status='failed' — the pipeline never crashes.
 """
 
@@ -31,7 +31,7 @@ CHANGE_TYPE_LABELS = {
 async def send_immediate_alert(
     db: AsyncSession,
     changes: list,
-    sendgrid_api_key: str,
+    resend_api_key: str,
     from_email: str,
     owner_email: str,
     frontend_url: str,
@@ -56,7 +56,7 @@ async def send_immediate_alert(
             subject = f"【CompeteTrack 緊急】{brand_name} 發生重大變化"
             html = _build_immediate_html(change, brand_name, frontend_url)
 
-            await _send_email(sendgrid_api_key, from_email, owner_email, subject, html)
+            await _send_email(resend_api_key, from_email, owner_email, subject, html)
 
             # Mark as notified
             change.notified_at = datetime.now(timezone.utc)
@@ -104,7 +104,7 @@ async def send_immediate_alert(
 
 async def send_daily_digest(
     db: AsyncSession,
-    sendgrid_api_key: str,
+    resend_api_key: str,
     from_email: str,
     owner_email: str,
     frontend_url: str,
@@ -144,7 +144,7 @@ async def send_daily_digest(
         html = _build_empty_digest_html(frontend_url)
 
         try:
-            await _send_email(sendgrid_api_key, from_email, owner_email, subject, html)
+            await _send_email(resend_api_key, from_email, owner_email, subject, html)
 
             if user_id:
                 notification = Notification(
@@ -185,7 +185,7 @@ async def send_daily_digest(
     html = _build_digest_html(changes, brand_names, frontend_url)
 
     try:
-        await _send_email(sendgrid_api_key, from_email, owner_email, subject, html)
+        await _send_email(resend_api_key, from_email, owner_email, subject, html)
 
         # Mark all as notified
         change_ids = []
@@ -224,31 +224,31 @@ async def send_daily_digest(
         return {"status": "failed", "count": len(changes)}
 
 
-# ── SendGrid sender ──
+# ── Resend sender ──
 
 async def _send_email(
     api_key: str, from_email: str, to_email: str, subject: str, html: str,
 ) -> None:
-    """Send email via SendGrid HTTP API. Raises on failure."""
+    """Send email via Resend HTTP API. Raises on failure."""
     import httpx
 
     async with httpx.AsyncClient(timeout=10.0) as client:
         resp = await client.post(
-            "https://api.sendgrid.com/v3/mail/send",
+            "https://api.resend.com/emails",
             headers={
                 "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json",
             },
             json={
-                "personalizations": [{"to": [{"email": to_email}]}],
-                "from": {"email": from_email, "name": "CompeteTrack"},
+                "from": f"CompeteTrack <{from_email}>",
+                "to": [to_email],
                 "subject": subject,
-                "content": [{"type": "text/html", "value": html}],
+                "html": html,
             },
         )
-        if resp.status_code not in (200, 201, 202):
+        if resp.status_code not in (200, 201):
             raise RuntimeError(
-                f"SendGrid error {resp.status_code}: {resp.text[:200]}"
+                f"Resend error {resp.status_code}: {resp.text[:200]}"
             )
 
 
